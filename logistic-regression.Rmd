@@ -1,15 +1,24 @@
 ---
 title: "Logistic Regression"
-author: "Scott Stoltzman"
+author: "Francesco Bonifazi"
 date: "7/8/2019"
 output: html_document
 ---
+
+```{r}
+install.packages("tidyverse")
+install.packages("modelr")
+install.packages("caret")
+install.packages("titanic")
+install.packages("e1071")
+```
 
 ```{r setup, include=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library("tidyverse")
 library("modelr")
 library("caret")
+library("e1071")
 ```
 
 # Logistic regression (Again!)
@@ -28,9 +37,10 @@ dat = raw_dat %>%
          Survived = as.factor(Survived)) %>%
   select(-Ticket, -Name, -Cabin) %>%
   as_tibble()
-
+```
 
 # "By Hand"
+```{r}
 set.seed(123)
 training_split = 0.75 #75% data for train, 25% for test
 smp_size = floor(training_split * nrow(dat))
@@ -38,19 +48,18 @@ train_ind = sample(seq_len(nrow(dat)), size = smp_size)
 
 train_dat = dat[train_ind,]
 test_dat = dat[-train_ind,]
-
+```
 
 # "Tidy:
+
+```{r}
 set.seed(123)
-training_split = 0.75 #75% data for train, 25% for test
+training_split = 0.75 #75% data for train, 25% for #test
 train_dat = dat %>% sample_frac(training_split)
 test_dat = dat %>% anti_join(train_dat, by = 'PassengerId')
-
-
-# Clean up data to remove ID
-train_dat = train_dat %>% select(-PassengerId)
-test_dat = test_dat %>% select(-PassengerId)
 ```
+
+
 
 ```{r}
 mod1 = glm(Survived ~ ., family = binomial(link = 'logit'), data = train_dat)
@@ -103,27 +112,63 @@ null_error_rate = train_survived_false / nrow(train_dat)
 print(paste0('Accuracy: ', 100*round(cm$overall[1], 2), '%'))
 print(paste0('Null Error Rate: ', 100*round(null_error_rate, 2), '%'))
 ```
+#FB: Our rate is 17% higher than the Null Error Rate.
 
 ## Extract confusion matrix data
 Find true positive, false positive, true negative, false negative. Also find `tp_rate` and `fp_rate`
 ```{r}
 conf_mat = cm$table
-
-tp = 
-tn = 
-fn = 
-fp = 
-
-tp_rate =  # aka "sensitivity" or "recall" when yes, how often does it predict yes?
-fp_rate =  # aka "specificity" when no, how often does it predict yes?
+conf_mat
 
 ```
+```{r}
+conf_mat = cm$table
+
+tp = conf_mat[2,2]
+tn = conf_mat[1,1]
+fn = conf_mat[2,1]
+fp = conf_mat[1,2]
+tp
+tn
+fn
+fp
+#tp_rate =  # aka "sensitivity" or "recall" when yes, how often does it predict yes?
+tp_rate = tp + fn
+tp_rate
+
+#fp_rate =  # aka "specificity" when no, how often does it predict yes?
+fp_rate = fp + tn
+fp_rate
+```
+
 
 # Create a function to make the "best" model by tuning the cutoff parameter
 ```{r}
 model_cutoff = function(df, mod, cutoff_level){ 
 
+results = df %>%
+  add_predictions(model = mod, var = 'pred', type = 'response') %>%
+  mutate(pred_binary = factor(if_else(pred <= cutoff_level, 0, 1)))
+#head(results)
+conf_mat = cm$table
+
+tp = conf_mat[2,2]
+tn = conf_mat[1,1]
+fn = conf_mat[2,1]
+fp = conf_mat[1,2]
+tp_rate = tp/(tp + fn)
+fp_rate = fp/(fp + tn)
+print(cutoff_level)
+print(tp_rate)
+print(fp_rate)
+
 }
+```
+
+```{r}
+
+model_cutoff(results, mod4, .5)
+
 ```
 
 Your function should output:
