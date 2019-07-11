@@ -128,16 +128,14 @@ tp = conf_mat[2,2]
 tn = conf_mat[1,1]
 fn = conf_mat[2,1]
 fp = conf_mat[1,2]
-tp
-tn
-fn
-fp
-#tp_rate =  # aka "sensitivity" or "recall" when yes, how often does it predict yes?
-tp_rate = tp + fn
-tp_rate
 
-#fp_rate =  # aka "specificity" when no, how often does it predict yes?
-fp_rate = fp + tn
+#tp_rate =  # aka "sensitivity" or "recall" when yes, how often does it predict yes?
+tp_rate = (tp/(tp + fn))
+
+
+#fp_rate =  # aka "specificity" when no, how often does it predict yes?tp_rate = tp/(tp + fn)
+fp_rate = (fp/(fp + tn))
+tp_rate
 fp_rate
 ```
 
@@ -158,9 +156,11 @@ fn = conf_mat[2,1]
 fp = conf_mat[1,2]
 tp_rate = tp/(tp + fn)
 fp_rate = fp/(fp + tn)
+
+#
 print(cutoff_level)
-print(tp_rate)
-print(fp_rate)
+return(tp_rate)
+return(fp_rate)
 
 }
 ```
@@ -175,21 +175,27 @@ Your function should output:
 cutoff_level 0.5
 tp_rate 0.76666666...
 fp_rate 0.1869...
+
+#FB: Mine is off a bit...but matches the "answers" version!!!!
 ```{r}
 train_dat %>% model_cutoff(mod = mod4, cutoff_level = 0.5)
 ```
 
 Iterate through function to create a tibble of true positive rates, false positive rates for cutoff levels from 0 to 1 by 0.01 (0, 0.01, 0.02, ..., 1)
 ```{r}
-my_results = tibble(cutoff_level, tp_rate, fp_rate)
-for(i in 1:100){
-  cutoff_level = i/100
-  print(cutoff_level)
-  tmp = train_dat %>% 
-    model_cutoff(mod = mod4, cutoff_level = cutoff_level)
-  my_results = my_results %>% bind_rows(tmp)
+
+for(i in 1:100) {
+
+  cutoff_level = 1/i
+  tmp = train_dat 
+  my_results = model_cutoff(results, mod4, cutoff_level) #%>%
+    
+  #bind(tmp)
 }
+  
+#FB: Had to removed the bind line to work at all!
 ```
+
 
 Create ROC curve and plot your data points
 ```{r}
